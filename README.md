@@ -31,7 +31,6 @@ pour assurer une meilleure répartition de la charge et améliorer les performan
 
 ## Structure du Projet
 
-undefined
 ```
 Projet-Load-Balancing-Docker/
 │
@@ -48,7 +47,7 @@ Projet-Load-Balancing-Docker/
 ├── docker-compose.yml # Configuration Docker Compose
 └── composer.json # Dépendances PHP
 ```
-undefined
+
 ## Installation et Démarrage
 
 1. Clonez ce dépôt :
