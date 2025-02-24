@@ -68,7 +68,7 @@ Configurer Nginx si besoin.
 - **Application PHP** : `http://localhost:8083` Accessible via le load balancer sur le port 8083
 - **PHPMyAdmin** : `http://localhost:8080`
 - **Prometheus** : `http://localhost:9090`
-- **Grafana** : `http://localhost:3000`
+- **Grafana** : `http://localhost:3000`: usernme : admin, password : admin
 - **Kibana** : `http://localhost:5601`
 - **Locust** : `http://localhost:8089`
 
