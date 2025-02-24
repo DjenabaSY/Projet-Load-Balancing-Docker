@@ -1,0 +1,175 @@
+version: '3.8'
+
+services:
+  load-balancer:
+    image: nginx:latest
+    container_name: nginx_load_balancer
+    ports:
+      - "8083:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app1
+      - app2  
+    networks:
+      - app_network
+    restart: always
+
+  app1:
+    build:
+      context: .
+    container_name: auth_system_web1
+    volumes:
+      - ./src:/var/www/html/src
+      - ./logs:/var/log/php
+      - ./composer.json:/var/www/html/composer.json
+    depends_on:
+      - db
+    networks:
+      - app_network
+    expose:
+      - "9000"  
+
+  app2:
+    build:
+      context: .
+    container_name: auth_system_web2
+    volumes:
+      - ./src:/var/www/html/src
+      - ./logs:/var/log/php
+      - ./composer.json:/var/www/html/composer.json
+    depends_on:
+      - db
+    networks:
+      - app_network
+    expose:
+      - "9000" 
+
+  db:
+    image: mysql:5.7
+    container_name: auth_system_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: app_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user_password
+    volumes:
+      - ./src/users.sql:/docker-entrypoint-initdb.d/users.sql
+    networks:
+      - app_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest  # Utilise l'image officielle phpMyAdmin
+    container_name: auth_system_phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: db  # Indique le nom du service MySQL (ici 'db')
+      PMA_USER: user  # Utilisateur root pour se connecter à MySQL
+      PMA_PASSWORD: user_password  # Mot de passe root
+    ports:
+      - "8080:80"  # Redirige le port 8080 de l'hôte vers le port 80 du conteneur
+    depends_on:
+      - db  # Attends que le service MySQL soit prêt
+    networks:
+      - app_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - app_network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.14.0
+    volumes:
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logs:/var/log/php:ro
+    environment:
+      - PIPELINE_WORKERS=2  
+    depends_on:
+      - elasticsearch
+    networks:
+      - app_network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.0
+    ports:
+      - "5601:5601"
+    volumes:
+       - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - app_network
+    
+  prometheus:
+    image: prom/prometheus:v2.30.3
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app_network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'  
+
+  grafana:
+    image: grafana/grafana:8.2.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - app_network
+  
+  locust:
+    image: locustio/locust
+    volumes:
+      - ./locust:/mnt/locust
+    ports:
+     - "8089:8089"
+    command: -f /mnt/locust/locustfile.py --host http://load-balancer
+    networks:
+      - app_network
+
+  php-exporter:
+    image: hipages/php-fpm_exporter
+    command: --phpfpm.scrape-uri http://app1:9000/status,http://app2:9000/status
+    ports:
+     - "9253:9253"
+    networks:
+      - app_network
+    depends_on:
+      - app1
+      - app2
+
+volumes:
+  db_data:
+  esdata:
+  grafana-storage:
+  prometheus_data:
+
+
+networks:
+  app_network:
+    driver: bridge

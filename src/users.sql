@@ -1,0 +1,62 @@
+CREATE DATABASE IF NOT EXISTS app_db;
+USE app_db;
+
+CREATE TABLE IF NOT EXISTS users_test (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    recipient_id INT NOT NULL,
+    sender_name VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users_test(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_id) REFERENCES users_test(id) ON DELETE CASCADE,
+    INDEX idx_sender (sender_id),
+    INDEX idx_recipient (recipient_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id INT PRIMARY KEY,
+    bio TEXT,
+    avatar_url VARCHAR(255),
+    FOREIGN KEY (user_id) REFERENCES users_test(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users_test(id) ON DELETE CASCADE,
+    INDEX idx_user (user_id)
+);
+
+
+ALTER TABLE messages ADD COLUMN is_new BOOLEAN DEFAULT TRUE;
+
+ALTER TABLE messages ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id INT PRIMARY KEY,
+    email_notifications BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES users_test(id) ON DELETE CASCADE
+);
+
+ALTER TABLE user_preferences 
+ADD COLUMN message_notifications BOOLEAN DEFAULT TRUE,
+MODIFY COLUMN email_notifications BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE user_profiles ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+
+
