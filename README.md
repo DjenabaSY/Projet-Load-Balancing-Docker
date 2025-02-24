@@ -31,7 +31,9 @@ pour assurer une meilleure répartition de la charge et améliorer les performan
 
 ## Structure du Projet
 
-Projet-LBF/
+undefined
+
+'''Projet-Load-Balancing-Docker/
 │
 ├── src/ # Code source de l'application PHP
 ├── nginx/ # Configuration Nginx
@@ -45,7 +47,8 @@ Projet-LBF/
 ├── Dockerfile # Dockerfile pour l'application PHP
 ├── docker-compose.yml # Configuration Docker Compose
 └── composer.json # Dépendances PHP
-
+'''
+undefined
 ## Installation et Démarrage
 
 1. Clonez ce dépôt :
